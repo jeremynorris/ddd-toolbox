@@ -14,6 +14,7 @@ import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.log4j.Logger;
@@ -31,6 +32,7 @@ import org.hibernate.LockMode;
 import org.hibernate.Query;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
+import org.hibernate.annotations.common.reflection.ReflectionUtil;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Example;
 import org.hibernate.criterion.Projections;
@@ -156,14 +158,25 @@ public abstract class GenericEjb3Hibernate3DAOBean<T_ENTITY, T_ENTITY_ID extends
      */
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public Map<T_ENTITY_ID, T_ENTITY> findMapByIds(Set<T_ENTITY_ID> ids) {
-        
+
         Map<T_ENTITY_ID, T_ENTITY> results = new HashMap<T_ENTITY_ID, T_ENTITY>();
         Set<T_ENTITY> set = findSetByIds(ids);
-        for (T_ENTITY entity : set) {
-            // TODO: determine the how to safely find the ID accessor:
-            throw new NotImplementedException("determine the how to safely find the ID accessor:");
+        try {
+            for (T_ENTITY entity : set) {
+                @SuppressWarnings("unchecked")
+                T_ENTITY_ID id = (T_ENTITY_ID) PropertyUtils.getSimpleProperty(entity, getIdPropertyName());
+                results.put(id, entity);
+            }
         }
-        
+        catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
         return results;
     }
 
